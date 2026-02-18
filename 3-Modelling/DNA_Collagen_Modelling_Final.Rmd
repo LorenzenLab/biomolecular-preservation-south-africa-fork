@@ -1,5 +1,5 @@
 ---
-title: "DNA and collagen preservation modeling"
+title: "DNA and collagen preservation modelling"
 author: "Andi Wilson and Deon de Jager"
 date: "2025-12-21"
 output:
@@ -20,10 +20,10 @@ output:
 
 **Factors to consider:** 
 
-  * noMicro_endoPropxTarget: This is the endogenous DNA proportion.
-  * age_lower: This is the estimated age of the specimen.
-  * SiteShort or SiteLong: The fossil sites.
-  * Taxon_plots_common: The assigned taxon (after genetic identification).
+  * noMicro_endoPropxTarget: This is the endogenous DNA proportion where microbe-like and mitochondrial-like regions have been masked.
+  * latest_chrono_age: This is the estimated age of the specimen.
+  * Site_short: The fossil sites, in shorthand.
+  * Taxon_plots_common: The assigned taxon for plotting and modelling purposes.
   * material_group: Tooth or Bone.
   * species_identifiable: Yes or No.
   * noMicro_meanLengthxTarget: The mean read length of endogenous reads (only relevant for those where species_identifiable == "Yes").
@@ -60,7 +60,7 @@ setwd("C:/Users/pzx702/Documents/MSCAFellowship2021/Manuscripts/2023_aDNApreserv
 
 #### Load data
 ```{r message=FALSE, warning=FALSE}
-Data <- read_csv("paleomix_compMap_nc_coll_noMicro.csv")
+Data <- read_csv("Table S3 - paleomix nuclear & collagen.csv")
 
 #Log transform the endogenous content column 
 Data$log_endo <- log(Data$noMicro_endoPropxTarget)
@@ -70,12 +70,12 @@ Data$log_endo <- log(Data$noMicro_endoPropxTarget)
 #### Create plot of age vs endogenous content
 ```{r}
 Data %>%
-  ggplot(aes(x = age_lower, y = noMicro_endoPropxTarget)) +
+  ggplot(aes(x = latest_chrono_age, y = noMicro_endoPropxTarget)) +
   geom_jitter() + 
   labs(title = "Endogenous DNA content plotted against age")
 
 Data %>%
-  ggplot(aes(x = age_lower, y = log_endo)) +
+  ggplot(aes(x = latest_chrono_age, y = log_endo)) +
   geom_jitter() + 
   labs(title = "log(Endogenous DNA content) plotted against age")
 ```
@@ -101,15 +101,15 @@ hist(LogEnCo_hist)
 ## Set sum-to-zero contrasts to compare each site to the overall average, instead of a reference site,
 ## which by default is the first site alphabetically (BNK1). Will also apply to taxon and material group.
 #Model only considering the effect of age on endogenous content
-LM <- lm(log_endo ~ age_lower, data = Data)
+LM <- lm(log_endo ~ latest_chrono_age, data = Data)
 RVAideMemoire::plotresid(LM)
 summary(LM)
 
 #Model considering the effect of age and its interaction with site on endogenous content
 ## Set levels, so that all sites are compared to NBC (largest sample size). See also options("contrasts")
-Data$SiteShort <- factor(Data$SiteShort,
+Data$Site_short <- factor(Data$Site_short,
                          levels = c("NBC", "DK1", "EBC", "KRM", "BPA", "BNK1"))
-LM_SS <- lm(log_endo ~ age_lower * SiteShort, data = Data)
+LM_SS <- lm(log_endo ~ latest_chrono_age * Site_short, data = Data)
 RVAideMemoire::plotresid(LM_SS)
 summary(LM_SS)
 
@@ -117,12 +117,12 @@ summary(LM_SS)
 ## Set levels, so that tooth is the reference. See also options("contrasts")
 Data$material_group <- factor(Data$material_group,
                               levels = c("Tooth", "Bone"))
-LM_MG <- lm(log_endo ~ age_lower * material_group, data = Data)
+LM_MG <- lm(log_endo ~ latest_chrono_age * material_group, data = Data)
 RVAideMemoire::plotresid(LM_MG)
 summary(LM_MG)
 
 #Model considering the effect of age and its interaction with site and material group on endogenous content
-LM_SS_MG <- lm(log_endo ~ age_lower * SiteShort * material_group, data = Data)
+LM_SS_MG <- lm(log_endo ~ latest_chrono_age * Site_short * material_group, data = Data)
 RVAideMemoire::plotresid(LM_SS_MG)
 summary(LM_SS_MG)
 
@@ -130,12 +130,12 @@ summary(LM_SS_MG)
 ## Set levels, so that all species are compared to Cape buffalo (largest sample size). See also options("contrasts")
 Data$Taxon_plots_common <- factor(Data$Taxon_plots_common,
                          levels = c("Cape buffalo", "Cape grysbok", "Common eland", "Grey rhebok", "Long-horned buffalo", "Reedbuck"))
-LM_TP <- lm(log_endo ~ age_lower * Taxon_plots_common, data = Data)
+LM_TP <- lm(log_endo ~ latest_chrono_age * Taxon_plots_common, data = Data)
 RVAideMemoire::plotresid(LM_TP)
 summary(LM_TP)
 
 #Model considering the effect of age and its interaction with site and taxon on endogenous content
-LM_SS_TP <- lm(log_endo ~ age_lower * SiteShort * Taxon_plots_common, data = Data)
+LM_SS_TP <- lm(log_endo ~ latest_chrono_age * Site_short * Taxon_plots_common, data = Data)
 RVAideMemoire::plotresid(LM_SS_TP)
 summary(LM_SS_TP)
 
@@ -184,7 +184,7 @@ Overall, the best and most biologically-relevant model was likely the lm model t
   
   3. Age significantly impacted endogenous content, F = 5.7518, Df = 1, p < 0.05 
   4. Site significantly impacted endogenous content, F = 4.6632, Df = 5, p < 0.001
-  5. age_lower:SiteShort significantly impacted endogenous content, F = 7.9459, Df = 5, p < 0.001
+  5. latest_chrono_age:Site_short significantly impacted endogenous content, F = 7.9459, Df = 5, p < 0.001
   
 **Note:** The material group was also investigated as an experimental variable, but it did not significantly contribute to the endogenous DNA content. This may be due to the unequal sampling (14 bones vs 131 teeth).
 
@@ -192,7 +192,7 @@ Overall, the best and most biologically-relevant model was likely the lm model t
 
 #### Load data in
 ```{r message=FALSE, warning=FALSE}
-Data_CollagenAge <- read_csv("paleomix_compMap_nc_coll_noMicro.csv")
+Data_CollagenAge <- read_csv("Table S3 - paleomix nuclear & collagen.csv")
 
 #Log transform the collagen data
 Data_CollagenAge$log_Coll <- log(Data_CollagenAge$Coll_Yield_perc)
@@ -204,12 +204,12 @@ Data_CollagenAge <- Data_CollagenAge %>%
 #### Create plot of collagen vs endogenous content
 ```{r}
 Data_CollagenAge %>%
-  ggplot(aes(x = age_lower, y = Coll_Yield_perc)) +
+  ggplot(aes(x = latest_chrono_age, y = Coll_Yield_perc)) +
   geom_jitter() + 
   labs(title = "Collagen Yield against age")
 
 Data_CollagenAge %>%
-  ggplot(aes(x = age_lower, y = log_Coll)) +
+  ggplot(aes(x = latest_chrono_age, y = log_Coll)) +
   geom_jitter() + 
   labs(title = "log(Collagen Yield) plotted against age")
 ```
@@ -237,7 +237,7 @@ hist(Log_CollagenAge_hist)
 Data_CollagenAge$Coll_Yield_adj <- Data_CollagenAge$Coll_Yield_perc + 1e-8
 
 #Model only considering the effect of age on collagen yield
-GLM_collagen_age <- glm(Coll_Yield_adj ~ age_lower, data = Data_CollagenAge, 
+GLM_collagen_age <- glm(Coll_Yield_adj ~ latest_chrono_age, data = Data_CollagenAge, 
                        family = Gamma(link = "inverse"))
 RVAideMemoire::plotresid(GLM_collagen_age)
 summary(GLM_collagen_age)
@@ -245,9 +245,9 @@ summary(GLM_collagen_age)
 #Model considering the effect of age and its interaction with site on collagen yield
 # Note: Does not run, because sampling is to uneven across sites (both in sample size and age range)
 ## Set levels, so that all sites are compared to NBC. See also options("contrasts")
-#Data_CollagenAge$SiteShort <- factor(Data_CollagenAge$SiteShort,
+#Data_CollagenAge$Site_short <- factor(Data_CollagenAge$Site_short,
 #                         levels = c("NBC", "DK1", "EBC", "KRM", "BPA", "BNK1"))
-#GLM_SS_collagen_age <- glm(Coll_Yield_adj ~ age_lower * SiteShort, data = Data_CollagenAge,  
+#GLM_SS_collagen_age <- glm(Coll_Yield_adj ~ latest_chrono_age * Site_short, data = Data_CollagenAge,  
 #                         family = Gamma(link = "inverse"))
 #RVAideMemoire::plotresid(GLM_SS_collagen_age)
 #summary(GLM_SS_collagen_age)
@@ -256,7 +256,7 @@ summary(GLM_collagen_age)
 ## Set levels, so that tooth is the reference. See also options("contrasts")
 Data_CollagenAge$material_group <- factor(Data_CollagenAge$material_group,
                               levels = c("Tooth", "Bone"))
-GLM_MG_collagen_age <- glm(Coll_Yield_adj ~ age_lower * material_group, data = Data_CollagenAge, 
+GLM_MG_collagen_age <- glm(Coll_Yield_adj ~ latest_chrono_age * material_group, data = Data_CollagenAge, 
                           family = Gamma(link = "inverse"))
 RVAideMemoire::plotresid(GLM_MG_collagen_age)
 summary(GLM_MG_collagen_age)
@@ -265,7 +265,7 @@ summary(GLM_MG_collagen_age)
 ## Set levels, so that all species are compared to Cape buffalo. See also options("contrasts")
 Data_CollagenAge$Taxon_plots_common <- factor(Data_CollagenAge$Taxon_plots_common,
                          levels = c("Cape buffalo", "Cape grysbok", "Common eland", "Grey rhebok", "Long-horned buffalo", "Reedbuck"))
-GLM_TP_collagen_age <- glm(Coll_Yield_adj ~ age_lower * Taxon_plots_common, data = Data_CollagenAge, 
+GLM_TP_collagen_age <- glm(Coll_Yield_adj ~ latest_chrono_age * Taxon_plots_common, data = Data_CollagenAge, 
                              family = Gamma(link = "inverse"))
 RVAideMemoire::plotresid(GLM_TP_collagen_age)
 summary(GLM_TP_collagen_age)
@@ -304,7 +304,7 @@ Overall, the best and most biologically-relevant model was the glm model that on
 
 #### Load data in
 ```{r message=FALSE, warning=FALSE}
-Data <- read_csv("paleomix_compMap_nc_coll_noMicro.csv")
+Data <- read_csv("Table S3 - paleomix nuclear & collagen.csv")
 
 #Log transform the endogenous content column 
 Data$log_endo <- log(Data$noMicro_endoPropxTarget)
@@ -353,9 +353,9 @@ summary(LM_collagen)
 
 #Model considering the effect of age and its interaction with site on endogenous content
 ## Set levels, so that all sites are compared to NBC. See also options("contrasts")
-Data_Collagen$SiteShort <- factor(Data_Collagen$SiteShort,
+Data_Collagen$Site_short <- factor(Data_Collagen$Site_short,
                          levels = c("NBC", "DK1", "EBC", "KRM", "BPA", "BNK1"))
-LM_SS_collagen <- lm(log_endo ~ Coll_Yield_perc * SiteShort, data = Data_Collagen)
+LM_SS_collagen <- lm(log_endo ~ Coll_Yield_perc * Site_short, data = Data_Collagen)
 RVAideMemoire::plotresid(LM_SS_collagen)
 summary(LM_SS_collagen)
 
@@ -368,7 +368,7 @@ RVAideMemoire::plotresid(LM_MG_collagen)
 summary(LM_MG_collagen)
 
 #Model considering the effect of age and its interaction with site and material group on endogenous content
-LM_SS_MG_collagen <- lm(log_endo ~ Coll_Yield_perc * SiteShort * material_group, data = Data_Collagen)
+LM_SS_MG_collagen <- lm(log_endo ~ Coll_Yield_perc * Site_short * material_group, data = Data_Collagen)
 RVAideMemoire::plotresid(LM_SS_MG_collagen)
 summary(LM_SS_MG_collagen)
 
@@ -381,7 +381,7 @@ RVAideMemoire::plotresid(LM_TP_collagen)
 summary(LM_TP_collagen)
 
 #Model considering the effect of age and its interaction with site and taxon on endogenous content
-LM_SS_TP_collagen <- lm(log_endo ~ Coll_Yield_perc * SiteShort * Taxon_plots_common, data = Data_Collagen)
+LM_SS_TP_collagen <- lm(log_endo ~ Coll_Yield_perc * Site_short * Taxon_plots_common, data = Data_Collagen)
 RVAideMemoire::plotresid(LM_SS_TP_collagen)
 summary(LM_SS_TP_collagen)
 
@@ -419,7 +419,7 @@ Overall, the best and most biologically-relevant model was likely the lm model t
   
   3. Collagen yield (percentage) significantly impacted endogenous content, F = 46.9561, Df = 1, p < 0.001
   4. Site significantly impacted endogenous content, F = 7.1415, Df = 4, p < 0.001
-  5. Coll_Yield_perc:SiteShort significantly impacted endogenous DNA content: F = 2.7939, Df = 4, p < 0.05
+  5. Coll_Yield_perc:Site_short significantly impacted endogenous DNA content: F = 2.7939, Df = 4, p < 0.05
 
 Therefore, collagen yield is partially predictive of endogenous DNA content, together with site. There was a significant effect of the interaction between collagen yield and site. 
 
@@ -429,7 +429,7 @@ Therefore, collagen yield is partially predictive of endogenous DNA content, tog
 
 #### Filter for specimens where species_identifiable == "Yes"
 ```{r message=FALSE, warning=FALSE}
-Data <- read_csv("paleomix_compMap_nc_coll_noMicro.csv")
+Data <- read_csv("Table S3 - paleomix nuclear & collagen.csv")
 
 #Log transform the read length (in case needed)
 Data$log_rl <- log(Data$noMicro_meanLengthxTarget)
@@ -442,12 +442,12 @@ Data_Yes <- Data %>% filter(species_identifiable == "Yes")
 #### Create plot of age vs mean read length
 ```{r}
 Data_Yes %>%
-  ggplot(aes(x = age_lower, y = noMicro_meanLengthxTarget)) +
+  ggplot(aes(x = latest_chrono_age, y = noMicro_meanLengthxTarget)) +
   geom_jitter() + 
   labs(title = "Mean read length plotted against age")
 
 Data_Yes %>%
-  ggplot(aes(x = age_lower, y = log_rl)) +
+  ggplot(aes(x = latest_chrono_age, y = log_rl)) +
   geom_jitter() + 
   labs(title = "log(Mean read length) plotted against age")
 ```
@@ -472,15 +472,15 @@ hist(log_rl_yes_hist)
 #Use linear models for all, but test for the various potential factors 
 
 #Model only considering the effect of age on read length
-LM_Yes <- lm(log_rl ~ age_lower, data = Data_Yes)
+LM_Yes <- lm(log_rl ~ latest_chrono_age, data = Data_Yes)
 RVAideMemoire::plotresid(LM_Yes)
 summary(LM_Yes)
 
 #Model considering the effect of age and its interaction with site on endogenous content
 ## Set levels, so that all sites are compared to NBC. See also options("contrasts")
-Data_Yes$SiteShort <- factor(Data_Yes$SiteShort,
+Data_Yes$Site_short <- factor(Data_Yes$Site_short,
                          levels = c("NBC", "DK1", "EBC", "KRM", "BPA", "BNK1"))
-LM_SS_Yes <- lm(log_rl ~ age_lower * SiteShort, data = Data_Yes)
+LM_SS_Yes <- lm(log_rl ~ latest_chrono_age * Site_short, data = Data_Yes)
 RVAideMemoire::plotresid(LM_SS_Yes)
 summary(LM_SS_Yes)
 
@@ -488,7 +488,7 @@ summary(LM_SS_Yes)
 ## Set levels, so that tooth is the reference. See also options("contrasts")
 Data_Yes$material_group <- factor(Data_Yes$material_group,
                               levels = c("Tooth", "Bone"))
-LM_MG_Yes <- lm(log_rl ~ age_lower * material_group, data = Data_Yes)
+LM_MG_Yes <- lm(log_rl ~ latest_chrono_age * material_group, data = Data_Yes)
 RVAideMemoire::plotresid(LM_MG_Yes)
 summary(LM_MG_Yes)
 
@@ -496,7 +496,7 @@ summary(LM_MG_Yes)
 ## Set levels, so that tooth is the reference. See also options("contrasts")
 Data_Yes$material_group <- factor(Data_Yes$material_group,
                               levels = c("Tooth", "Bone"))
-LM_SS_MG_Yes <- lm(log_rl ~ age_lower * SiteShort * material_group, data = Data_Yes)
+LM_SS_MG_Yes <- lm(log_rl ~ latest_chrono_age * Site_short * material_group, data = Data_Yes)
 RVAideMemoire::plotresid(LM_SS_MG_Yes)
 summary(LM_SS_MG_Yes)
 
@@ -504,12 +504,12 @@ summary(LM_SS_MG_Yes)
 ## Set levels, so that all species are compared to Cape buffalo. See also options("contrasts")
 Data_Yes$Taxon_plots_common <- factor(Data_Yes$Taxon_plots_common,
                          levels = c("Cape buffalo", "Cape grysbok", "Common eland", "Grey rhebok", "Long-horned buffalo", "Reedbuck"))
-LM_TP_Yes <- lm(log_rl ~ age_lower * Taxon_plots_common, data = Data_Yes)
+LM_TP_Yes <- lm(log_rl ~ latest_chrono_age * Taxon_plots_common, data = Data_Yes)
 RVAideMemoire::plotresid(LM_TP_Yes)
 summary(LM_TP_Yes)
 
 #Model considering the effect of age and its interaction with site and taxon on endogenous content
-LM_SS_TP_Yes <- lm(log_rl ~ age_lower * SiteShort * Taxon_plots_common, data = Data_Yes)
+LM_SS_TP_Yes <- lm(log_rl ~ latest_chrono_age * Site_short * Taxon_plots_common, data = Data_Yes)
 RVAideMemoire::plotresid(LM_SS_TP_Yes)
 summary(LM_SS_TP_Yes)
 
@@ -550,17 +550,17 @@ Overall, the best model was the lm model that took into account site as an exper
   
   3. Age did not significantly impact mean read length, F = 1.8436, Df = 1, p > 0.05 
   4. Site significantly impacted mean read length, F = 6.0620, Df = 5, p < 0.001
-  5. age_lower:SiteShort significantly impacted mean read length, F = 4.4937, Df = 4, p < 0.01
+  5. latest_chrono_age:Site_short significantly impacted mean read length, F = 4.4937, Df = 4, p < 0.01
   
 **Note:** The data are heavily skewed across sites, with 71% (46/65) of the samples coming from one site, NBC, and the other sites having <10 each. The two sites with a significant relationship with read length (EBC and KRM, p < 0.05) have 1 and 2 samples, respectively. Therefore, to see if age has an impact on read length within site, run NBC alone.
 ```{r}
-table(Data_Yes$SiteShort)
+table(Data_Yes$Site_short)
 ```
 
 
 ## 4.3. NBC: Age vs mean read length
 ```{r message=FALSE, warning=FALSE}
-Data <- read_csv("paleomix_compMap_nc_coll_noMicro.csv")
+Data <- read_csv("Table S3 - paleomix nuclear & collagen.csv")
 
 #Log transform the read length (in case needed)
 Data$log_rl <- log(Data$noMicro_meanLengthxTarget)
@@ -568,19 +568,19 @@ Data$log_rl <- log(Data$noMicro_meanLengthxTarget)
 # filter
 Data_Yes_NBC <- Data %>% 
   filter(species_identifiable == "Yes") %>%
-  filter(SiteShort == "NBC")
+  filter(Site_short == "NBC")
 
 ```
 
 #### Create plot of age vs mean read length
 ```{r}
 Data_Yes_NBC %>%
-  ggplot(aes(x = age_lower, y = noMicro_meanLengthxTarget)) +
+  ggplot(aes(x = latest_chrono_age, y = noMicro_meanLengthxTarget)) +
   geom_jitter() + 
   labs(title = "Mean read length plotted against age")
 
 Data_Yes_NBC %>%
-  ggplot(aes(x = age_lower, y = log_rl)) +
+  ggplot(aes(x = latest_chrono_age, y = log_rl)) +
   geom_jitter() + 
   labs(title = "log(Mean read length) plotted against age")
 ```
@@ -604,7 +604,7 @@ hist(log_rl_yes_hist)
 #Use linear models for all, but test for the various potential factors 
 
 #Model only considering the effect of age on read length
-LM_Yes <- lm(log_rl ~ age_lower, data = Data_Yes_NBC)
+LM_Yes <- lm(log_rl ~ latest_chrono_age, data = Data_Yes_NBC)
 RVAideMemoire::plotresid(LM_Yes)
 summary(LM_Yes)
 
@@ -612,7 +612,7 @@ summary(LM_Yes)
 ## Set levels, so that tooth is the reference. See also options("contrasts")
 Data_Yes_NBC$material_group <- factor(Data_Yes_NBC$material_group,
                               levels = c("Tooth", "Bone"))
-LM_MG_Yes <- lm(log_rl ~ age_lower * material_group, data = Data_Yes_NBC)
+LM_MG_Yes <- lm(log_rl ~ latest_chrono_age * material_group, data = Data_Yes_NBC)
 RVAideMemoire::plotresid(LM_MG_Yes)
 summary(LM_MG_Yes)
 
@@ -620,12 +620,12 @@ summary(LM_MG_Yes)
 ## Set levels, so that all species are compared to Cape grysbok (largest sample size at NBC). See also options("contrasts")
 Data_Yes_NBC$Taxon_plots_common <- factor(Data_Yes_NBC$Taxon_plots_common,
                          levels = c("Cape grysbok", "Cape buffalo", "Common eland", "Grey rhebok", "Long-horned buffalo", "Reedbuck"))
-LM_TP_Yes <- lm(log_rl ~ age_lower * Taxon_plots_common, data = Data_Yes_NBC)
+LM_TP_Yes <- lm(log_rl ~ latest_chrono_age * Taxon_plots_common, data = Data_Yes_NBC)
 RVAideMemoire::plotresid(LM_TP_Yes)
 summary(LM_TP_Yes)
 
 #Model considering the effect of age and its interaction with site and taxon on endogenous content
-LM_MG_TP_Yes <- lm(log_rl ~ age_lower * material_group * Taxon_plots_common, data = Data_Yes_NBC)
+LM_MG_TP_Yes <- lm(log_rl ~ latest_chrono_age * material_group * Taxon_plots_common, data = Data_Yes_NBC)
 RVAideMemoire::plotresid(LM_MG_TP_Yes)
 summary(LM_MG_TP_Yes)
 
